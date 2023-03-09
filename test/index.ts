@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { SortedArray, UnsortedArrayError } from '../src';
+import { Direction, SortedArray, UnsortedArrayError } from '../src';
 
 describe('SortedArray', () => {
 
@@ -39,13 +39,15 @@ describe('SortedArray', () => {
 
   it('findFirst', () => {
     const array = SortedArray.parse([1, 2, 3, 4], { compare: (a, b) => a - b })
-    assert.deepEqual(array.findFirst((element, _index) => element > 2), { element: 3, index: 2 })
-    assert.deepEqual(array.findFirst((element, _index) => element > 3), { element: 4, index: 3 })
-    assert.deepEqual(array.findFirst((element, _index) => element > 1, 1), { element: 2, index: 1 })
-    assert.deepEqual(array.findFirst((element, _index) => element > 1, 2), { element: 3, index: 2 })
-    assert.deepEqual(array.findFirst((element, _index) => element > 1, 0, 1), undefined)
     assert.equal(array.findFirst((element, _index) => element < 1), undefined)
     assert.equal(array.findFirst((element, _index) => element > 4), undefined)
+    assert.deepEqual(array.findFirst((element, _index) => element > 2), { element: 3, index: 2 })
+    assert.deepEqual(array.findFirst((element, _index) => element > 3), { element: 4, index: 3 })
+    assert.deepEqual(array.findFirst((element, _index) => element > 1, { left: 1 }), { element: 2, index: 1 })
+    assert.deepEqual(array.findFirst((element, _index) => element > 1, { left: 2 }), { element: 3, index: 2 })
+    assert.deepEqual(array.findFirst((element, _index) => element > 1, { left: 0, right: 0 }), undefined)
+    // TODO: Fix so this test passes.
+    assert.deepEqual(array.findFirst((element, _index) => element > 1, { left: 2, direction: Direction.RightToLeft }), { element: 2, index: 1 })
   })
 
 })

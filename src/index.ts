@@ -1,4 +1,6 @@
 
+// TODO: Documentation.
+
 export interface Comperator<T> {
   compare(a: T, b: T): number;
 }
@@ -8,6 +10,11 @@ export class UnsortedArrayError<T> extends Error {
     // TODO: Work on the message...
     super(`Invalid input unsorted array: array[${i}] > array[${i + 1}]`)
   }
+}
+
+export enum Direction {
+  LeftToRight,
+  RightToLeft
 }
 
 export class SortedArray<T> {
@@ -61,10 +68,15 @@ export class SortedArray<T> {
 
   }
 
-  public findFirst(predicate: (element: T, index: number) => boolean, start = 0, end = this._array.length): { element: T; index: number } | undefined {
+  public findFirst(predicate: (element: T, index: number) => boolean, options?: { left?: number, right?: number, direction?: Direction }): { element: T; index: number } | undefined {
+    const start = options?.left ?? 0; // inclusive
+    const end = options?.right ?? this._array.length - 1; // inclusive
+    const direction = options?.direction ?? Direction.LeftToRight;
+    direction; // TODO: Remove this.
     let element;
-    // TODO: Make this use binary search :)
-    for (let index = start; index < end; index++) {
+    // TODO: Make this use binary search.
+    // TODO: Handle direction.
+    for (let index = start; index <= end; index++) {
       element = this._array[index]!;
       if (predicate(element, index)) {
         return { element, index }
