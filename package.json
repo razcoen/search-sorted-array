@@ -1,0 +1,17 @@
+{
+  "name": "search-sorted-array",
+  "version": "0.1.0",
+  "description": "Search fast in a Sorted Array",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "github.com/razcoen/search-sorted-array"
+  },
+  "keywords": [
+    "sorted-array",
+    "search",
+    "binary-search"
+  ],
+  "author": "Raz Cohen (github.com/razcoen)",
+  "license": "MIT"
+}
