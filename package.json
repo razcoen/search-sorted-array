@@ -2,7 +2,7 @@
   "name": "search-sorted-array",
   "version": "0.1.0",
   "description": "Search fast in a Sorted Array",
-  "main": "index.js",
+  "main": "build/index.js",
   "repository": {
     "type": "git",
     "url": "github.com/razcoen/search-sorted-array"
@@ -13,5 +13,17 @@
     "binary-search"
   ],
   "author": "Raz Cohen (github.com/razcoen)",
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha -r ts-node/register test/index.ts"
+  },
+  "devDependencies": {
+    "@types/assert": "^1.5.6",
+    "@types/mocha": "^10.0.1",
+    "assert": "^2.0.0",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5"
+  }
 }
