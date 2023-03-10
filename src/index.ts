@@ -68,21 +68,85 @@ export class SortedArray<T> {
 
   }
 
-  public findFirst(predicate: (element: T, index: number) => boolean, options?: { left?: number, right?: number, direction?: Direction }): { element: T; index: number } | undefined {
-    const start = options?.left ?? 0; // inclusive
-    const end = options?.right ?? this._array.length - 1; // inclusive
-    const direction = options?.direction ?? Direction.LeftToRight;
-    direction; // TODO: Remove this.
-    let element;
-    // TODO: Make this use binary search.
-    // TODO: Handle direction.
-    for (let index = start; index <= end; index++) {
-      element = this._array[index]!;
-      if (predicate(element, index)) {
-        return { element, index }
+  public findFirstGreaterThan(needle: T, options?: { left?: number, right?: number, direction?: Direction }): { element: T; index: number } | undefined {
+    const config = {
+      left: options?.left ?? 0, // inclusive
+      right: options?.right ?? this._array.length, // exclusive
+      direction: options?.direction ?? Direction.LeftToRight
+    }
+    switch (config.direction) {
+      case Direction.RightToLeft: {
+        return undefined;
+      }
+      default:
+      case Direction.LeftToRight: {
+
+        let left = config.left;
+        let right = config.right;
+        let mid = Math.floor(left + right / 2);
+        let item;
+        while (left < right) {
+          item = this._array[mid]!;
+          if (this._comperator.compare(item, needle) <= 0) {
+            left = mid;
+          } else {
+            right = mid;
+          }
+          mid = Math.floor((left + right) / 2);
+          if (mid === right) break;
+          if (mid === left) break;
+        }
+
+        item = this._array[mid]!;
+        if (this._comperator.compare(item, needle) > 0) {
+          return { element: item, index: mid };
+        }
+
+        ++mid;
+        if (mid >= config.right) {
+          return undefined;
+        }
+
+        item = this._array[mid]!;
+        if (this._comperator.compare(item, needle) > 0) {
+          return { element: item, index: mid };
+        }
+
+        return undefined
+
+        // Exponential search
+        //
+        // let index = left;
+        // let previousIndex = -1;
+        // let nextElement;
+        //
+        // while (index <= right && index !== previousIndex) {
+        //   let jump = 0;
+        //   let nextJump = 1;
+        //   while (nextJump <= right - index) {
+        //     nextElement = this._array[index + nextJump]!
+        //     if (this._comperator.compare(nextElement, needle) <= 0) {
+        //       jump = nextJump;
+        //       nextJump *= 2;
+        //     } else break;
+        //   }
+        //   previousIndex = index;
+        //   index += jump;
+        // }
+        //
+        //
+        // let element = this._array[index]!;
+        // if (this._comperator.compare(element, needle) <= 0) {
+        //   ++index;
+        //   element = this._array[index]!
+        // }
+        // if (index > right) {
+        //   return undefined;
+        // }
+        // return { element, index }
+
       }
     }
-    return undefined;
   }
 
 }
