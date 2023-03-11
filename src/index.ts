@@ -70,7 +70,7 @@ export class SortedArray<T> {
     return new SortedArray(array, comperator, { verify: true, clone: true });
   }
 
-  public findFirst(needle: T, options?: Partial<SearchOptions>): { item: T; index: number } | undefined {
+  public search(needle: T, options?: Partial<SearchOptions>): { item: T; index: number } | undefined {
 
     let left = options?.left ?? 0 // inclusive
     let right = options?.right ?? this._array.length // exclusive

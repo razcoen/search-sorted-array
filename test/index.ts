@@ -45,10 +45,10 @@ describe('SortedArray', () => {
     })
   })
 
-  it('findFirst - greater', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Ascending }) })
-  it('findFirst - lesser', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Descending }) })
-  it('findFirst - greater or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Ascending }) })
-  it('findFirst - lesser or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Descending }) })
+  it('search - greater', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Ascending }) })
+  it('search - lesser', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Descending }) })
+  it('search - greater or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Ascending }) })
+  it('search - lesser or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Descending }) })
 
   function generateRandomSortedArray(length?: number) {
     length = length ?? 100_000;
@@ -61,7 +61,7 @@ describe('SortedArray', () => {
     return array;
   }
 
-  function linearFindFirst(array: Array<number>, needle: number, options: SearchOptions) {
+  function linearSearch(array: Array<number>, needle: number, options: SearchOptions) {
 
     switch (options.direction) {
 
@@ -143,11 +143,11 @@ describe('SortedArray', () => {
         const needle = randomInt(min - 1, max + 2)
 
         const startTimeLinearSearch = process.hrtime.bigint()
-        const expected = linearFindFirst(randomArray, needle, { left, right, ...options })
+        const expected = linearSearch(randomArray, needle, { left, right, ...options })
         const endTimeLinearSearch = process.hrtime.bigint()
 
         const startTimeBinarySearch = process.hrtime.bigint()
-        const actual = sortedArray.findFirst(needle, { left, right, ...options })
+        const actual = sortedArray.search(needle, { left, right, ...options })
         const endTimeBinarySearch = process.hrtime.bigint()
 
         assert.deepEqual(actual, expected, JSON.stringify({ actual, expected, needle, right, left, length }, null, 2))
