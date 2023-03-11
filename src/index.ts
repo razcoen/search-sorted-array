@@ -1,6 +1,5 @@
-export interface Comperator<T> {
-  compare(a: T, b: T): number
-}
+export type CompareFn<T> = (a: T, b: T) => number
+
 
 export class UnsortedArrayError<T> extends Error {
   constructor(_array: Array<T>, i: number) {
@@ -28,14 +27,14 @@ export interface SortedArrayOptions {
 export class SortedArray<T> {
 
   private readonly _array: Array<T>;
-  private readonly _comperator: Comperator<T>;
+  private readonly _compareFn: CompareFn<T>;
 
-  private constructor(array: Array<T>, comperator: Comperator<T>, options?: Partial<SortedArrayOptions>) {
+  private constructor(array: Array<T>, compareFn: CompareFn<T>, options?: Partial<SortedArrayOptions>) {
 
     const verify = options?.verify ?? true;
     const clone = options?.clone ?? true;
 
-    this._comperator = comperator;
+    this._compareFn = compareFn;
     if (!verify && !clone) {
       this._array = array;
       return;
@@ -55,7 +54,7 @@ export class SortedArray<T> {
       current = next;
       next = array[i + 1]!;
       this._array[i + 1] = next;
-      if (verify && comperator.compare(current, next) > 0) {
+      if (verify && compareFn(current, next) > 0) {
         throw new UnsortedArrayError(array, i)
       }
       ++i;
@@ -63,11 +62,11 @@ export class SortedArray<T> {
 
   }
 
-  public static unsafe<T>(array: Array<T>, comperator: Comperator<T>): SortedArray<T> {
+  public static unsafe<T>(array: Array<T>, comperator: CompareFn<T>): SortedArray<T> {
     return new SortedArray(array, comperator, { verify: false, clone: false });
   }
 
-  public static parse<T>(array: Array<T>, comperator: Comperator<T>): SortedArray<T> {
+  public static parse<T>(array: Array<T>, comperator: CompareFn<T>): SortedArray<T> {
     return new SortedArray(array, comperator, { verify: true, clone: true });
   }
 
@@ -124,9 +123,9 @@ export class SortedArray<T> {
 
   private _searchAscendingSkipEqual(needle: T, left: number, right: number) {
 
-    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) <= 0);
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) <= 0);
 
-    if (this._comperator.compare(item, needle) > 0) {
+    if (this._compareFn(item, needle) > 0) {
       return { item: item, index: mid };
     }
 
@@ -141,9 +140,9 @@ export class SortedArray<T> {
 
   private _searchAscending(needle: T, left: number, right: number) {
 
-    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) < 0);
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) < 0);
 
-    if (this._comperator.compare(item, needle) >= 0) {
+    if (this._compareFn(item, needle) >= 0) {
       return { item: item, index: mid };
     }
 
@@ -158,9 +157,9 @@ export class SortedArray<T> {
 
   private _searchDescendingSkipEqual(needle: T, left: number, right: number) {
 
-    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) < 0);
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) < 0);
 
-    if (this._comperator.compare(item, needle) < 0) {
+    if (this._compareFn(item, needle) < 0) {
       return { item: item, index: mid };
     }
 
@@ -175,9 +174,9 @@ export class SortedArray<T> {
 
   private _searchDescending(needle: T, left: number, right: number) {
 
-    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) <= 0);
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) <= 0);
 
-    if (this._comperator.compare(item, needle) <= 0) {
+    if (this._compareFn(item, needle) <= 0) {
       return { item: item, index: mid };
     }
 

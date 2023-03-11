@@ -1,22 +1,22 @@
 import assert from 'assert';
 import { randomInt } from 'crypto';
-import { Comperator, Direction, SearchOptions, SortedArray, UnsortedArrayError } from '../src';
+import { CompareFn, Direction, SearchOptions, SortedArray, UnsortedArrayError } from '../src';
 
 const BENCHMARK_ARRAY_LENGTHS = [0, 1, 10, 50, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000];
 const BENCHMARK_ITERATIONS = 10_000;
 
-const ASCENDING_SORT_COMPERATOR: Comperator<number> = { compare: (a: number, b: number) => a - b };
-const DESCENDING_SORT_COMPERATOR: Comperator<number> = { compare: (a: number, b: number) => b - a };
+const ASCENDING_SORT_COMPARE_FN: CompareFn<number> = (a: number, b: number) => a - b;
+const DESCENDING_SORT_COMPARE_FN: CompareFn<number> = (a: number, b: number) => b - a;
 
 
 describe('SortedArray', () => {
 
   it('parse', () => {
-    assert.throws(() => SortedArray.parse([3, 4, 2], ASCENDING_SORT_COMPERATOR), new UnsortedArrayError([3, 4, 2], 1))
-    assert.throws(() => SortedArray.parse([3, 2, 1], ASCENDING_SORT_COMPERATOR), new UnsortedArrayError([3, 2, 1], 0))
+    assert.throws(() => SortedArray.parse([3, 4, 2], ASCENDING_SORT_COMPARE_FN), new UnsortedArrayError([3, 4, 2], 1))
+    assert.throws(() => SortedArray.parse([3, 2, 1], ASCENDING_SORT_COMPARE_FN), new UnsortedArrayError([3, 2, 1], 0))
     assert.doesNotThrow(() => {
       const originalArray = [1, 2, 3];
-      const parsedArray = SortedArray.parse(originalArray, ASCENDING_SORT_COMPERATOR)
+      const parsedArray = SortedArray.parse(originalArray, ASCENDING_SORT_COMPARE_FN)
       assert.notEqual(parsedArray['_array'], originalArray, "The internal array should be a clone of the original, so that is immutable.")
       for (let i = 0; i < originalArray.length; i++) {
         assert.equal(parsedArray['_array'][i], originalArray[i], "The internal array should be a clone of the original, so that is immutable.")
@@ -24,7 +24,7 @@ describe('SortedArray', () => {
     })
     assert.doesNotThrow(() => {
       const originalArray = [3, 2, 1];
-      const parsedArray = SortedArray.parse(originalArray, DESCENDING_SORT_COMPERATOR)
+      const parsedArray = SortedArray.parse(originalArray, DESCENDING_SORT_COMPARE_FN)
       assert.notEqual(parsedArray['_array'], originalArray, "The internal array should be a clone of the original, so that is immutable.")
       for (let i = 0; i < originalArray.length; i++) {
         assert.equal(parsedArray['_array'][i], originalArray[i], "The internal array should be a clone of the original, so that is immutable.")
@@ -35,12 +35,12 @@ describe('SortedArray', () => {
   it('unsafe', () => {
     assert.doesNotThrow(() => {
       const originalArray = [3, 2, 1];
-      const parsedArray = SortedArray.unsafe(originalArray, ASCENDING_SORT_COMPERATOR)
+      const parsedArray = SortedArray.unsafe(originalArray, ASCENDING_SORT_COMPARE_FN)
       assert.equal(parsedArray['_array'], originalArray)
     })
     assert.doesNotThrow(() => {
       const originalArray = [3, 2, 1];
-      const parsedArray = SortedArray.unsafe(originalArray, DESCENDING_SORT_COMPERATOR)
+      const parsedArray = SortedArray.unsafe(originalArray, DESCENDING_SORT_COMPARE_FN)
       assert.equal(parsedArray['_array'], originalArray)
     })
   })
@@ -107,7 +107,7 @@ describe('SortedArray', () => {
 
   function benchmarkSearch(options: { skipEqual: boolean, direction: Direction }) {
 
-    const benchmarks = []
+    const benchmarks: Array<{length: number, metrics: any}> = []
 
     for (let length of BENCHMARK_ARRAY_LENGTHS) {
 
@@ -116,11 +116,11 @@ describe('SortedArray', () => {
       const endTimeGenerate = process.hrtime.bigint()
 
       const startTimeUnsafe = process.hrtime.bigint()
-      SortedArray.unsafe(randomArray, ASCENDING_SORT_COMPERATOR)
+      SortedArray.unsafe(randomArray, ASCENDING_SORT_COMPARE_FN)
       const endTimeUnsafe = process.hrtime.bigint()
 
       const startTimeParse = process.hrtime.bigint()
-      const sortedArray = SortedArray.parse(randomArray, ASCENDING_SORT_COMPERATOR)
+      const sortedArray = SortedArray.parse(randomArray, ASCENDING_SORT_COMPARE_FN)
       const endTimeParse = process.hrtime.bigint()
 
       const metrics = {
@@ -160,7 +160,7 @@ describe('SortedArray', () => {
 
     }
 
-    const table = []
+    const table: Array<any> = []
     for (const benchmark of benchmarks) {
       const { metrics, length } = benchmark;
       const gst = Number(metrics.generateDurationNanos) / 1_000_000
@@ -186,7 +186,7 @@ describe('SortedArray', () => {
     console.log(`
 ====================== BENCHMARKS ======================
 
-Direction:  ${options.direction === Direction.Ascending ? 'Ascending' : 'Descending' }
+Direction:  ${options.direction === Direction.Ascending ? 'Ascending' : 'Descending'}
 Skip Equal: ${options.skipEqual}
 `)
 
