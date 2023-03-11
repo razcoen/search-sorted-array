@@ -2,20 +2,26 @@
 
 ## Usage
 
+### Construct
 ```typescript
-import { Direction, SortedArray } from 'search-sorted-array'
+import { SortedArray } from 'search-sorted-array'
 
 let array: SortedArray<number>
 
+array = SortedArray.parse([1, 2, 3, 4], (a, b) => a - b)
 array = SortedArray.parse([4, 2, 3, 4], (a, b) => a - b) // throws UnsortedArrayError 
 
 // "SortedArray.unsafe" does not verify the array is actually sorted.
 // Use when performance is critical and one can assume the array is sorted.
 array = SortedArray.unsafe([4, 2, 3, 4], (a, b) => a - b)  
 
+```
 
+### Find First
+```typescript
+import { Direction, SortedArray } from 'search-sorted-array'
 
-array = SortedArray.parse([1, 2, 3, 4], (a, b) => a - b)
+const array = SortedArray.parse([1, 2, 3, 4], (a, b) => a - b)
 
 array.findFirst(1) // --> {item: 1, index: 0}
 array.findFirst(2) // --> {item: 2, index: 1}
