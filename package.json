@@ -5,7 +5,7 @@
   "main": "build/index.js",
   "repository": {
     "type": "git",
-    "url": "github.com/razcoen/search-sorted-array"
+    "url": "https://github.com/razcoen/search-sorted-array"
   },
   "keywords": [
     "sorted-array",
