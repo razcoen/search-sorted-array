@@ -7,8 +7,12 @@ import { Direction, SortedArray } from 'search-sorted-array'
 
 let array: SortedArray<number>
 
-array = SortedArray.parse([4, 2, 3, 4], { compare: (a, b) => a - b })   // --> throws UnsortedArrayError 
-array = SortedArray.unsafe([4, 2, 3, 4], { compare: (a, b) => a - b })  // "unsafe" does not verify, use when performance is critical and can assume the array is sorted.
+array = SortedArray.parse([4, 2, 3, 4], { compare: (a, b) => a - b })   
+// --> throws UnsortedArrayError 
+
+array = SortedArray.unsafe([4, 2, 3, 4], { compare: (a, b) => a - b })  
+// "unsafe" does not verify, use when performance is critical and can assume the array is sorted.
+
 array = SortedArray.parse([1, 2, 3, 4], { compare: (a, b) => a - b })
 
 // Assuming array to be [1,2,3,4].
