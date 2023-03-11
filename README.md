@@ -1,4 +1,10 @@
-# search-sorted-array
+# [search-sorted-array](https://www.npmjs.com/package/search-sorted-array)
+
+## Install
+
+```bash
+npm install search-sorted-array
+```
 
 ## Usage
 
