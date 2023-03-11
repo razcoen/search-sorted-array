@@ -1,15 +1,22 @@
 import assert from 'assert';
 import { randomInt } from 'crypto';
-import { SortedArray, UnsortedArrayError } from '../src';
+import { Comperator, Direction, SearchOptions, SortedArray, UnsortedArrayError } from '../src';
+
+const BENCHMARK_ARRAY_LENGTHS = [0, 1, 10, 50, 100, 500, 1_000, 5_000, 10_000, 50_000, 100_000];
+const BENCHMARK_ITERATIONS = 10_000;
+
+const ASCENDING_SORT_COMPERATOR: Comperator<number> = { compare: (a: number, b: number) => a - b };
+const DESCENDING_SORT_COMPERATOR: Comperator<number> = { compare: (a: number, b: number) => b - a };
+
 
 describe('SortedArray', () => {
 
   it('parse', () => {
-    assert.throws(() => SortedArray.parse([3, 4, 2], { compare: (a, b) => a - b }), new UnsortedArrayError([3, 4, 2], 1))
-    assert.throws(() => SortedArray.parse([3, 2, 1], { compare: (a, b) => a - b }), new UnsortedArrayError([3, 2, 1], 0))
+    assert.throws(() => SortedArray.parse([3, 4, 2], ASCENDING_SORT_COMPERATOR), new UnsortedArrayError([3, 4, 2], 1))
+    assert.throws(() => SortedArray.parse([3, 2, 1], ASCENDING_SORT_COMPERATOR), new UnsortedArrayError([3, 2, 1], 0))
     assert.doesNotThrow(() => {
       const originalArray = [1, 2, 3];
-      const parsedArray = SortedArray.parse(originalArray, { compare: (a, b) => a - b })
+      const parsedArray = SortedArray.parse(originalArray, ASCENDING_SORT_COMPERATOR)
       assert.notEqual(parsedArray['_array'], originalArray, "The internal array should be a clone of the original, so that is immutable.")
       for (let i = 0; i < originalArray.length; i++) {
         assert.equal(parsedArray['_array'][i], originalArray[i], "The internal array should be a clone of the original, so that is immutable.")
@@ -17,7 +24,7 @@ describe('SortedArray', () => {
     })
     assert.doesNotThrow(() => {
       const originalArray = [3, 2, 1];
-      const parsedArray = SortedArray.parse(originalArray, { compare: (a, b) => b - a })
+      const parsedArray = SortedArray.parse(originalArray, DESCENDING_SORT_COMPERATOR)
       assert.notEqual(parsedArray['_array'], originalArray, "The internal array should be a clone of the original, so that is immutable.")
       for (let i = 0; i < originalArray.length; i++) {
         assert.equal(parsedArray['_array'][i], originalArray[i], "The internal array should be a clone of the original, so that is immutable.")
@@ -28,155 +35,122 @@ describe('SortedArray', () => {
   it('unsafe', () => {
     assert.doesNotThrow(() => {
       const originalArray = [3, 2, 1];
-      const parsedArray = SortedArray.unsafe(originalArray, { compare: (a, b) => a - b })
+      const parsedArray = SortedArray.unsafe(originalArray, ASCENDING_SORT_COMPERATOR)
       assert.equal(parsedArray['_array'], originalArray)
     })
     assert.doesNotThrow(() => {
       const originalArray = [3, 2, 1];
-      const parsedArray = SortedArray.unsafe(originalArray, { compare: (a, b) => b - a })
+      const parsedArray = SortedArray.unsafe(originalArray, DESCENDING_SORT_COMPERATOR)
       assert.equal(parsedArray['_array'], originalArray)
     })
   })
 
-  it('findFirstGreaterThan', () => {
+  it('findFirst - greater', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Ascending }) })
+  it('findFirst - lesser', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Descending }) })
+  it('findFirst - greater or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Ascending }) })
+  it('findFirst - lesser or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Descending }) })
 
-    function findFirstGreaterThanLinearSearch(array: Array<number>, needle: number, left: number = 0, right: number = array.length) {
-      for (let i = left; i < right; i++) {
-        if (array[i]! > needle) {
-          return { element: array[i], index: i }
+  function generateRandomSortedArray(length?: number) {
+    length = length ?? 100_000;
+    const array = new Array(length);
+    let current = 0;
+    for (let i = 0; i < length; i++) {
+      current += randomInt(0, 3)
+      array[i] = current
+    }
+    return array;
+  }
+
+  function linearFindFirst(array: Array<number>, needle: number, options: SearchOptions) {
+
+    switch (options.direction) {
+
+      case Direction.Ascending:
+
+        if (options.skipEqual) {
+          for (let i = options.left; i < options.right; i++) {
+            if (array[i]! > needle) {
+              return { item: array[i], index: i }
+            }
+          }
+          return undefined;
         }
-      }
-      return undefined;
-    }
 
-    function generateRandomSortedArray(length?: number) {
-      length = length ?? 100000;
-      const array = new Array(length);
-      let current = 0;
-      for (let i = 0; i < length; i++) {
-        if (randomInt(0, 2) === 1) {
-          current += randomInt(5)
+        for (let i = options.left; i < options.right; i++) {
+          if (array[i]! >= needle) {
+            return { item: array[i], index: i }
+          }
         }
-        array[i] = current
-      }
-      return array;
+        return undefined;
+
+      case Direction.Descending:
+
+        if (options.skipEqual) {
+          for (let i = options.right - 1; i >= options.left; i--) {
+            if (array[i]! < needle) {
+              return { item: array[i], index: i }
+            }
+          }
+          return undefined;
+        }
+
+        for (let i = options.right - 1; i >= options.left; i--) {
+          if (array[i]! <= needle) {
+            return { item: array[i], index: i }
+          }
+        }
+        return undefined;
     }
 
-    {
-      const internalArray = [1, 2, 3, 4]
-      const array = SortedArray.parse(internalArray, { compare: (a, b) => a - b })
-      const matrix = [
-        {
-          input: { needle: 0 },
-          output: { element: 1, index: 0 }
-        },
-        {
-          input: { needle: 1 },
-          output: { element: 2, index: 1 }
-        },
-        {
-          input: { needle: 2 },
-          output: { element: 3, index: 2 }
-        },
-        {
-          input: { needle: 3 },
-          output: { element: 4, index: 3 }
-        },
-        {
-          input: { needle: 4 },
-          output: undefined,
-        },
-        {
-          input: { needle: 1, options: { left: 1 } },
-          output: { element: 2, index: 1 }
-        },
-        {
-          input: { needle: 1, options: { left: 2 } },
-          output: { element: 3, index: 2 }
-        },
-        {
-          input: { needle: 1, options: { left: 0, right: 1 } },
-          output: undefined,
-        },
-      ]
 
-      for (const row of matrix) {
-        assert.deepEqual(findFirstGreaterThanLinearSearch(internalArray, row.input.needle, row.input.options?.left, row.input.options?.right), row.output)
-        assert.deepEqual(array.findFirstGreaterThan(row.input.needle, row.input.options), row.output)
-      }
+  }
 
-    }
-    {
-      const internalArray = [1, 2, 2, 2, 2, 2, 2, 3, 3, 4, 4]
-      const array = SortedArray.parse(internalArray, { compare: (a, b) => a - b })
-      const matrix = [
-        {
-          input: { needle: 0 },
-          output: { element: 1, index: 0 }
-        },
-        {
-          input: { needle: 1 },
-          output: { element: 2, index: 1 }
-        },
-        {
-          input: { needle: 2 },
-          output: { element: 3, index: 7 }
-        },
-        {
-          input: { needle: 3 },
-          output: { element: 4, index: 9 }
-        },
-        {
-          input: { needle: 4 },
-          output: undefined,
-        },
-        {
-          input: { needle: 1, options: { left: 1 } },
-          output: { element: 2, index: 1 }
-        },
-        {
-          input: { needle: 1, options: { left: 3 } },
-          output: { element: 2, index: 3 }
-        },
-        {
-          input: { needle: 2, options: { right: 3 } },
-          output: undefined,
-        },
-      ]
+  function benchmarkSearch(options: { skipEqual: boolean, direction: Direction }) {
 
-      for (const row of matrix) {
-        assert.deepEqual(findFirstGreaterThanLinearSearch(internalArray, row.input.needle, row.input.options?.left, row.input.options?.right), row.output)
-        assert.deepEqual(array.findFirstGreaterThan(row.input.needle, row.input.options), row.output)
-      }
-    }
+    const benchmarks = []
 
-    { // Benchmark
+    for (let length of BENCHMARK_ARRAY_LENGTHS) {
 
-      const randomArray = generateRandomSortedArray(3_000_000)
-      const sortedArray = SortedArray.parse(randomArray, { compare: (a, b) => a - b })
+      const startTimeGenerate = process.hrtime.bigint()
+      const randomArray = generateRandomSortedArray(length)
+      const endTimeGenerate = process.hrtime.bigint()
+
+      const startTimeUnsafe = process.hrtime.bigint()
+      SortedArray.unsafe(randomArray, ASCENDING_SORT_COMPERATOR)
+      const endTimeUnsafe = process.hrtime.bigint()
+
+      const startTimeParse = process.hrtime.bigint()
+      const sortedArray = SortedArray.parse(randomArray, ASCENDING_SORT_COMPERATOR)
+      const endTimeParse = process.hrtime.bigint()
+
       const metrics = {
         linearSearchDurationNanos: BigInt(0),
         binarySearchDurationNanos: BigInt(0),
+        generateDurationNanos: endTimeGenerate - startTimeGenerate,
+        unsafeDurationNanos: endTimeUnsafe - startTimeUnsafe,
+        parseDurationNanos: endTimeParse - startTimeParse,
         count: 0,
       }
 
-      for (let i = 0; i < 1000; i++) {
+      benchmarks.push({ length, metrics })
 
-        const min = randomArray[0]!
-        const max = randomArray[randomArray.length - 1]!;
-        const left = randomInt(randomArray.length)
+      for (let i = 0; i < BENCHMARK_ITERATIONS; i++) {
+
+        const min = randomArray[0] ?? 0
+        const max = randomArray[randomArray.length - 1] ?? 0;
+        const left = randomInt(-1, randomArray.length)
         const right = randomInt(left, randomArray.length)
         const needle = randomInt(min - 1, max + 2)
 
         const startTimeLinearSearch = process.hrtime.bigint()
-        const expected = findFirstGreaterThanLinearSearch(randomArray, needle, left, right)
+        const expected = linearFindFirst(randomArray, needle, { left, right, ...options })
         const endTimeLinearSearch = process.hrtime.bigint()
 
         const startTimeBinarySearch = process.hrtime.bigint()
-        const actual = sortedArray.findFirstGreaterThan(needle, { left, right })
+        const actual = sortedArray.findFirst(needle, { left, right, ...options })
         const endTimeBinarySearch = process.hrtime.bigint()
 
-        assert.deepEqual(actual, expected)
+        assert.deepEqual(actual, expected, JSON.stringify({ actual, expected, needle, right, left, length }, null, 2))
 
         metrics.linearSearchDurationNanos += endTimeLinearSearch - startTimeLinearSearch
         metrics.binarySearchDurationNanos += endTimeBinarySearch - startTimeBinarySearch
@@ -184,26 +158,42 @@ describe('SortedArray', () => {
 
       }
 
-      const bsa = Number(metrics.binarySearchDurationNanos / BigInt(1000 * metrics.count))
-      const lsa = Number(metrics.linearSearchDurationNanos / BigInt(1000 * metrics.count))
-      console.log(`
+    }
+
+    const table = []
+    for (const benchmark of benchmarks) {
+      const { metrics, length } = benchmark;
+      const gst = Number(metrics.generateDurationNanos) / 1_000_000
+      const pst = Number(metrics.parseDurationNanos) / 1_000_000
+      const ust = Number(metrics.unsafeDurationNanos) / 1_000_000
+      const bst = Number(metrics.binarySearchDurationNanos) / 1_000_000
+      const lst = Number(metrics.linearSearchDurationNanos) / 1_000_000
+      const bsa = Number(metrics.binarySearchDurationNanos) / (metrics.count * 1_000)
+      const lsa = Number(metrics.linearSearchDurationNanos) / (metrics.count * 1_000)
+      const multiplier = Number((metrics.linearSearchDurationNanos * BigInt(1_000)) / metrics.binarySearchDurationNanos) / 1_000
+      table.push({
+        length,
+        'generate (ms)': Math.trunc(gst * 100) / 100,
+        'unsafe (ms)': Math.trunc(ust * 100) / 100,
+        'parse (ms)': Math.trunc(pst * 100) / 100,
+        'binary search total (ms)': Math.trunc(bst * 100) / 100,
+        'linear search total (ms)': Math.trunc(lst * 100) / 100,
+        'binary search average (us)': Math.trunc(bsa * 100) / 100,
+        'linear search average (us)': Math.trunc(lsa * 100) / 100,
+        multiplier: Math.trunc(multiplier * 100) / 100
+      })
+    }
+    console.log(`
 ====================== BENCHMARKS ======================
 
-                       < Input >
+Direction:  ${options.direction === Direction.Ascending ? 'Ascending' : 'Descending' }
+Skip Equal: ${options.skipEqual}
+`)
 
-             Array Length --- ${randomArray.length}
-               Iterations --- ${metrics.count}
-
-
-                  < Duration Average >
-
-            Binary Search --- ${bsa}us
-            Linear Search --- ${lsa}us
-
+    console.table(table)
+    console.log(`
 ========================================================
 `)
 
-    }
-  })
-
+  }
 })

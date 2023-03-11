@@ -1,20 +1,28 @@
-
-// TODO: Documentation.
-
 export interface Comperator<T> {
-  compare(a: T, b: T): number;
+  compare(a: T, b: T): number
 }
 
 export class UnsortedArrayError<T> extends Error {
   constructor(_array: Array<T>, i: number) {
-    // TODO: Work on the message...
     super(`Invalid input unsorted array: array[${i}] > array[${i + 1}]`)
   }
 }
 
+export interface SearchOptions {
+  direction: Direction
+  left: number
+  right: number
+  skipEqual: boolean
+}
+
 export enum Direction {
-  LeftToRight,
-  RightToLeft
+  Ascending,
+  Descending
+}
+
+export interface SortedArrayOptions {
+  verify: boolean
+  clone: boolean
 }
 
 export class SortedArray<T> {
@@ -22,131 +30,165 @@ export class SortedArray<T> {
   private readonly _array: Array<T>;
   private readonly _comperator: Comperator<T>;
 
-  private constructor(array: Array<T>, comperator: Comperator<T>) {
-    this._array = array;
+  private constructor(array: Array<T>, comperator: Comperator<T>, options?: Partial<SortedArrayOptions>) {
+
+    const verify = options?.verify ?? true;
+    const clone = options?.clone ?? true;
+
     this._comperator = comperator;
-    this._array; // TODO: remove
-    this._comperator; // TODO: remove
-  }
+    if (!verify && !clone) {
+      this._array = array;
+      return;
+    }
 
-  // Duration:    O(1)
-  // Allocation:  O(1)
-  public static unsafe<T>(array: Array<T>, comperator: Comperator<T>): SortedArray<T> {
-    return new SortedArray(array, comperator);
-  }
-
-  // Duration:    O(N)
-  // Allocation:  O(N)
-  public static parse<T>(array: Array<T>, comperator: Comperator<T>): SortedArray<T> {
+    this._array = clone ? new Array(array.length) : array;
 
     if (array.length === 0) {
-      return new SortedArray([], comperator);
+      return
     }
 
-    if (array.length === 1) {
-      return new SortedArray([array[0]!], comperator);
-    }
-
-    const clone = new Array<T>(array.length);
-
-    // Trying to read from the array only once to avoid heap access.
     let i = 0;
     let current = array[0]!;
     let next = current;
-    clone[0] = current;
+    this._array[0] = current;
     while (i < array.length - 1) {
       current = next;
       next = array[i + 1]!;
-      clone[i + 1] = next;
-      if (comperator.compare(current, next) > 0) {
+      this._array[i + 1] = next;
+      if (verify && comperator.compare(current, next) > 0) {
         throw new UnsortedArrayError(array, i)
       }
       ++i;
     }
 
-    return new SortedArray(clone, comperator)
+  }
+
+  public static unsafe<T>(array: Array<T>, comperator: Comperator<T>): SortedArray<T> {
+    return new SortedArray(array, comperator, { verify: false, clone: false });
+  }
+
+  public static parse<T>(array: Array<T>, comperator: Comperator<T>): SortedArray<T> {
+    return new SortedArray(array, comperator, { verify: true, clone: true });
+  }
+
+  public findFirst(needle: T, options?: Partial<SearchOptions>): { item: T; index: number } | undefined {
+
+    let left = options?.left ?? 0 // inclusive
+    let right = options?.right ?? this._array.length // exclusive
+
+    if (left >= right || left >= this._array.length || right <= 0 || this._array.length === 0) {
+      return undefined;
+    }
+
+    left = left >= 0 ? left : 0;
+    right = right <= this._array.length ? right : this._array.length;
+
+    const direction = options?.direction ?? Direction.Ascending;
+    const skipEqual = options?.skipEqual ?? false;
+
+    switch (direction) {
+
+      case Direction.Ascending:
+        if (skipEqual) return this._searchAscendingSkipEqual(needle, left, right)
+        return this._searchAscending(needle, left, right)
+
+      case Direction.Descending:
+        if (skipEqual) return this._searchDescendingSkipEqual(needle, left, right)
+        return this._searchDescending(needle, left, right)
+    }
 
   }
 
-  public findFirstGreaterThan(needle: T, options?: { left?: number, right?: number, direction?: Direction }): { element: T; index: number } | undefined {
-    const config = {
-      left: options?.left ?? 0, // inclusive
-      right: options?.right ?? this._array.length, // exclusive
-      direction: options?.direction ?? Direction.LeftToRight
-    }
-    switch (config.direction) {
-      case Direction.RightToLeft: {
-        return undefined;
+  private _binarySearch(needle: T, left: number, right: number, shouldGoRight: (item: T, needle: T) => boolean) {
+
+    let l = left;
+    let r = right;
+    let mid = ((l + r) / 2) | 0;
+    let item = this._array[mid]!;
+
+    while (l < r) {
+      if (shouldGoRight(item, needle)) {
+        l = mid;
+      } else {
+        r = mid;
       }
-      default:
-      case Direction.LeftToRight: {
-
-        let left = config.left;
-        let right = config.right;
-        let mid = Math.floor(left + right / 2);
-        let item;
-        while (left < right) {
-          item = this._array[mid]!;
-          if (this._comperator.compare(item, needle) <= 0) {
-            left = mid;
-          } else {
-            right = mid;
-          }
-          mid = Math.floor((left + right) / 2);
-          if (mid === right) break;
-          if (mid === left) break;
-        }
-
-        item = this._array[mid]!;
-        if (this._comperator.compare(item, needle) > 0) {
-          return { element: item, index: mid };
-        }
-
-        ++mid;
-        if (mid >= config.right) {
-          return undefined;
-        }
-
-        item = this._array[mid]!;
-        if (this._comperator.compare(item, needle) > 0) {
-          return { element: item, index: mid };
-        }
-
-        return undefined
-
-        // Exponential search
-        //
-        // let index = left;
-        // let previousIndex = -1;
-        // let nextElement;
-        //
-        // while (index <= right && index !== previousIndex) {
-        //   let jump = 0;
-        //   let nextJump = 1;
-        //   while (nextJump <= right - index) {
-        //     nextElement = this._array[index + nextJump]!
-        //     if (this._comperator.compare(nextElement, needle) <= 0) {
-        //       jump = nextJump;
-        //       nextJump *= 2;
-        //     } else break;
-        //   }
-        //   previousIndex = index;
-        //   index += jump;
-        // }
-        //
-        //
-        // let element = this._array[index]!;
-        // if (this._comperator.compare(element, needle) <= 0) {
-        //   ++index;
-        //   element = this._array[index]!
-        // }
-        // if (index > right) {
-        //   return undefined;
-        // }
-        // return { element, index }
-
-      }
+      mid = ((l + r) / 2) | 0;
+      item = this._array[mid]!;
+      if (mid === r) break;
+      if (mid === l) break;
     }
+
+    return { item, mid };
+
+  }
+
+  private _searchAscendingSkipEqual(needle: T, left: number, right: number) {
+
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) <= 0);
+
+    if (this._comperator.compare(item, needle) > 0) {
+      return { item: item, index: mid };
+    }
+
+    ++mid;
+    if (mid >= right) {
+      return undefined;
+    }
+    item = this._array[mid]!;
+    return { item: item, index: mid };
+
+  }
+
+  private _searchAscending(needle: T, left: number, right: number) {
+
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) < 0);
+
+    if (this._comperator.compare(item, needle) >= 0) {
+      return { item: item, index: mid };
+    }
+
+    ++mid;
+    if (mid >= right) {
+      return undefined;
+    }
+    item = this._array[mid]!;
+    return { item: item, index: mid };
+
+  }
+
+  private _searchDescendingSkipEqual(needle: T, left: number, right: number) {
+
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) < 0);
+
+    if (this._comperator.compare(item, needle) < 0) {
+      return { item: item, index: mid };
+    }
+
+    --mid;
+    if (mid < left) {
+      return undefined;
+    }
+    item = this._array[mid]!;
+    return { item: item, index: mid };
+
+  }
+
+  private _searchDescending(needle: T, left: number, right: number) {
+
+    let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._comperator.compare(item, needle) <= 0);
+
+    if (this._comperator.compare(item, needle) <= 0) {
+      return { item: item, index: mid };
+    }
+
+    --mid;
+    if (mid < left) {
+      return undefined;
+    }
+    item = this._array[mid]!;
+    return { item: item, index: mid };
+
   }
 
 }
+
