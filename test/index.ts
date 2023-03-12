@@ -45,10 +45,10 @@ describe('SortedArray', () => {
     })
   })
 
-  it('search - greater', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Right }) })
-  it('search - lesser', () => { benchmarkSearch({ skipEqual: true, direction: Direction.Left }) })
-  it('search - greater or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Right }) })
-  it('search - lesser or equal', () => { benchmarkSearch({ skipEqual: false, direction: Direction.Left }) })
+  it('search - greater', () => { benchmarkSearch({ inclusive: false, direction: Direction.Right }) })
+  it('search - lesser', () => { benchmarkSearch({ inclusive: false, direction: Direction.Left }) })
+  it('search - greater or equal', () => { benchmarkSearch({ inclusive: true, direction: Direction.Right }) })
+  it('search - lesser or equal', () => { benchmarkSearch({ inclusive: true, direction: Direction.Left }) })
 
   function generateRandomSortedArray(length?: number) {
     length = length ?? 100_000;
@@ -67,9 +67,9 @@ describe('SortedArray', () => {
 
       case Direction.Right:
 
-        if (options.skipEqual) {
+        if (options.inclusive) {
           for (let i = options.range.left!; i < options.range.right!; i++) {
-            if (array[i]! > needle) {
+            if (array[i]! >= needle) {
               return { item: array[i], index: i }
             }
           }
@@ -77,7 +77,7 @@ describe('SortedArray', () => {
         }
 
         for (let i = options.range.left!; i < options.range.right!; i++) {
-          if (array[i]! >= needle) {
+          if (array[i]! > needle) {
             return { item: array[i], index: i }
           }
         }
@@ -85,9 +85,9 @@ describe('SortedArray', () => {
 
       case Direction.Left:
 
-        if (options.skipEqual) {
+        if (options.inclusive) {
           for (let i = options.range.right! - 1; i >= options.range.left!; i--) {
-            if (array[i]! < needle) {
+            if (array[i]! <= needle) {
               return { item: array[i], index: i }
             }
           }
@@ -95,7 +95,7 @@ describe('SortedArray', () => {
         }
 
         for (let i = options.range.right! - 1; i >= options.range.left!; i--) {
-          if (array[i]! <= needle) {
+          if (array[i]! < needle) {
             return { item: array[i], index: i }
           }
         }
@@ -105,7 +105,7 @@ describe('SortedArray', () => {
 
   }
 
-  function benchmarkSearch(options: { skipEqual: boolean, direction: Direction }) {
+  function benchmarkSearch(options: { inclusive: boolean, direction: Direction }) {
 
     const benchmarks: Array<{ length: number, metrics: any }> = []
 
@@ -187,7 +187,7 @@ describe('SortedArray', () => {
 ====================== BENCHMARKS ======================
 
 Direction:  ${options.direction === Direction.Right ? 'Ascending' : 'Descending'}
-Skip Equal: ${options.skipEqual}
+Skip Equal: ${options.inclusive}
 `)
 
     console.table(table)

@@ -15,7 +15,7 @@ export interface Range {
 export interface SearchOptions {
   direction: Direction
   range: Partial<Range>
-  skipEqual: boolean
+  inclusive: boolean
 }
 
 export enum Direction {
@@ -77,7 +77,7 @@ export class SortedArray<T> {
   public searchRight(needle: T, options?: Partial<{ fromIndex: number, inclusive: boolean }>): { item: T, index: number } | undefined {
     return this.search(needle, {
       range: { left: options?.fromIndex, },
-      skipEqual: !(options?.inclusive ?? true),
+      inclusive: options?.inclusive,
       direction: Direction.Right,
     })
   }
@@ -85,7 +85,7 @@ export class SortedArray<T> {
   public searchLeft(needle: T, options: Partial<{ fromIndex: number, inclusive: boolean }>): { item: T, index: number } | undefined {
     return this.search(needle, {
       range: { right: (options && options.fromIndex) ? options.fromIndex + 1 : undefined, },
-      skipEqual: !(options?.inclusive ?? true),
+      inclusive: options?.inclusive,
       direction: Direction.Left,
     })
   }
@@ -103,17 +103,17 @@ export class SortedArray<T> {
     right = right <= this._array.length ? right : this._array.length;
 
     const direction = options?.direction ?? Direction.Right;
-    const skipEqual = options?.skipEqual ?? false;
+    const inclusive = options?.inclusive ?? true;
 
     switch (direction) {
 
       case Direction.Right:
-        if (skipEqual) return this._searchAscendingSkipEqual(needle, left, right)
-        return this._searchAscending(needle, left, right)
+        if (inclusive) return this._searchRightInclusive(needle, left, right)
+        else return this._searchRightExclusive(needle, left, right)
 
       case Direction.Left:
-        if (skipEqual) return this._searchDescendingSkipEqual(needle, left, right)
-        return this._searchDescending(needle, left, right)
+        if (inclusive) return this._searchLeftInclusive(needle, left, right)
+        else return this._searchLeftExclusive(needle, left, right)
     }
 
   }
@@ -141,7 +141,7 @@ export class SortedArray<T> {
 
   }
 
-  private _searchAscendingSkipEqual(needle: T, left: number, right: number) {
+  private _searchRightExclusive(needle: T, left: number, right: number) {
 
     let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) <= 0);
 
@@ -158,7 +158,7 @@ export class SortedArray<T> {
 
   }
 
-  private _searchAscending(needle: T, left: number, right: number) {
+  private _searchRightInclusive(needle: T, left: number, right: number) {
 
     let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) < 0);
 
@@ -175,7 +175,7 @@ export class SortedArray<T> {
 
   }
 
-  private _searchDescendingSkipEqual(needle: T, left: number, right: number) {
+  private _searchLeftExclusive(needle: T, left: number, right: number) {
 
     let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) < 0);
 
@@ -192,7 +192,7 @@ export class SortedArray<T> {
 
   }
 
-  private _searchDescending(needle: T, left: number, right: number) {
+  private _searchLeftInclusive(needle: T, left: number, right: number) {
 
     let { item, mid } = this._binarySearch(needle, left, right, (item, needle) => this._compareFn(item, needle) <= 0);
 
