@@ -7,16 +7,20 @@ export class UnsortedArrayError<T> extends Error {
   }
 }
 
-export interface SearchOptions {
-  direction: Direction
+export interface Range {
   left: number
   right: number
+}
+
+export interface SearchOptions {
+  direction: Direction
+  range: Partial<Range>
   skipEqual: boolean
 }
 
 export enum Direction {
-  Ascending,
-  Descending
+  Right,
+  Left
 }
 
 export interface SortedArrayOptions {
@@ -70,10 +74,26 @@ export class SortedArray<T> {
     return new SortedArray(array, comperator, { verify: true, clone: true });
   }
 
+  public searchRight(needle: T, options?: Partial<{ fromIndex: number, inclusive: boolean }>): { item: T, index: number } | undefined {
+    return this.search(needle, {
+      range: { left: options?.fromIndex, },
+      skipEqual: !(options?.inclusive ?? true),
+      direction: Direction.Right,
+    })
+  }
+
+  public searchLeft(needle: T, options: Partial<{ fromIndex: number, inclusive: boolean }>): { item: T, index: number } | undefined {
+    return this.search(needle, {
+      range: { right: (options && options.fromIndex) ? options.fromIndex + 1 : undefined, },
+      skipEqual: !(options?.inclusive ?? true),
+      direction: Direction.Left,
+    })
+  }
+
   public search(needle: T, options?: Partial<SearchOptions>): { item: T; index: number } | undefined {
 
-    let left = options?.left ?? 0 // inclusive
-    let right = options?.right ?? this._array.length // exclusive
+    let left = options?.range?.left ?? 0 // inclusive
+    let right = options?.range?.right ?? this._array.length // exclusive
 
     if (left >= right || left >= this._array.length || right <= 0 || this._array.length === 0) {
       return undefined;
@@ -82,16 +102,16 @@ export class SortedArray<T> {
     left = left >= 0 ? left : 0;
     right = right <= this._array.length ? right : this._array.length;
 
-    const direction = options?.direction ?? Direction.Ascending;
+    const direction = options?.direction ?? Direction.Right;
     const skipEqual = options?.skipEqual ?? false;
 
     switch (direction) {
 
-      case Direction.Ascending:
+      case Direction.Right:
         if (skipEqual) return this._searchAscendingSkipEqual(needle, left, right)
         return this._searchAscending(needle, left, right)
 
-      case Direction.Descending:
+      case Direction.Left:
         if (skipEqual) return this._searchDescendingSkipEqual(needle, left, right)
         return this._searchDescending(needle, left, right)
     }

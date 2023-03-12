@@ -34,20 +34,26 @@ array.search(2) // --> {item: 2, index: 1}
 array.search(3) // --> {item: 3, index: 2}
 array.search(4) // --> {item: 4, index: 3}
 
-// By default "search" searches with "Ascending" direction for the first greater or equal item.
+// By default "search" searches in right direction for the first greater or equal number.
 array.search(3.5)                                        // --> {item: 4, index: 3}
-array.search(3.5, { direction: Direction.Ascending })    // --> {item: 4, index: 3}
-array.search(3.5, { direction: Direction.Descending })   // --> {item: 3, index: 2}
+// "searchRight" searches from 0 to the end until it finds the first greater or equal number.
+// Same as "search" with "direction = Direction.Right" .
+array.searchRight(3.5)                                    // --> {item: 4, index: 2}
+array.search(3.5, { direction: Direction.Right })         // --> {item: 4, index: 3}
+// "searchLeft" searches from the end down to 0 until it finds the first lesser or equal number.
+// Same as "search" with "direction = Direction.Left".
+array.searchLeft(3.5)                                     // --> {item: 3, index: 2}
+array.search(3.5, { direction: Direction.Left })          // --> {item: 3, index: 2}
 
-array.search(3)                                                        // --> {item: 3, index: 2}
-array.search(3, { direction: Direction.Ascending, skipEqual: true })   // --> {item: 4, index: 3}
-array.search(3, { direction: Direction.Descending, skipEqual: true })  // --> {item: 2, index: 1}
+array.search(3)                                                   // --> {item: 3, index: 2}
+array.search(3, { direction: Direction.Right, skipEqual: true })  // --> {item: 4, index: 3}
+array.search(3, { direction: Direction.Left, skipEqual: true })   // --> {item: 2, index: 1}
 
-array.search(0)                                        // --> {item: 1, index: 0}
-array.search(0, { direction: Direction.Ascending })    // --> {item: 1, index: 0}
-array.search(0, { direction: Direction.Descending })   // --> undefined
+array.search(0)                                   // --> {item: 1, index: 0}
+array.search(0, { direction: Direction.Right })   // --> {item: 1, index: 0}
+array.search(0, { direction: Direction.Left })    // --> undefined
 
-array.search(5)                                        // --> undefined
-array.search(5, { direction: Direction.Ascending })    // --> undefined
-array.search(5, { direction: Direction.Descending })   // --> {item: 4, index: 3}
+array.search(5)                                   // --> undefined
+array.search(5, { direction: Direction.Right })   // --> undefined
+array.search(5, { direction: Direction.Left })    // --> {item: 4, index: 3}
 ```
